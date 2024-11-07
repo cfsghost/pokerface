@@ -4,6 +4,8 @@ go 1.19
 
 require (
 	github.com/google/uuid v1.3.0
+	github.com/nats-io/nats-server/v2 v2.9.20
+	github.com/nats-io/nats.go v1.28.0
 	github.com/stretchr/testify v1.8.4
 	github.com/weedbox/pokertable v0.0.0-20230818182614-a6fe03375bcf
 	github.com/weedbox/syncsaga v0.0.0-20230821071725-a634f0872340
@@ -15,8 +17,6 @@ require (
 	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/nats-io/jwt/v2 v2.4.1 // indirect
-	github.com/nats-io/nats-server/v2 v2.9.20 // indirect
-	github.com/nats-io/nats.go v1.28.0 // indirect
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

@@ -410,3 +410,137 @@ func Test_Allin_PreflopFirstCurrentPlayer(t *testing.T) {
 
 	// g.PrintState()
 }
+
+func Test_Allin_BigShortStackPlayers_AllowedActions(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 10
+	opts.Blind.BB = 20
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  3005,
+			Positions: []string{"dealer", "sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  11995,
+			Positions: []string{"bb"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	assert.Nil(t, g.Start())
+
+	// Waiting for ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Entering Preflop
+	assert.Equal(t, "preflop", g.GetState().Status.Round)
+
+	// Blinds
+	assert.Nil(t, g.PayBlinds())
+
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
+
+	// preflop movements
+	assert.Nil(t, g.GetCurrentPlayer().Call())     // Dealer: Call
+	assert.Nil(t, g.GetCurrentPlayer().Raise(100)) // BB: Raise 100
+	assert.Nil(t, g.GetCurrentPlayer().Call())     // Dealer: Call
+
+	// next
+	assert.Nil(t, g.Next())
+
+	// Entering Flop
+	assert.Equal(t, "flop", g.GetState().Status.Round)
+
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
+
+	// flop movements
+	assert.Nil(t, g.GetCurrentPlayer().Check())     // BB: Check
+	assert.Nil(t, g.GetCurrentPlayer().Bet(20))     // Dealer: Bet 20
+	assert.Nil(t, g.GetCurrentPlayer().Raise(4721)) // BB: Raise 4721
+	assert.Nil(t, g.GetCurrentPlayer().Allin())     // Dealer: Allin
+
+	/*
+		FIXME:
+		Conditions: dealer (small stack player), bb (big stack player)
+		Context: In this flop case, dealer has already allin.
+		Bug: Since bb is current raiser now, bb should not has any action and continue to "turn" round.
+	*/
+	assert.Equal(t, 1, g.GetState().Status.CurrentRaiser)
+	assert.Equal(t, 1, g.GetState().Status.CurrentPlayer)
+	assert.Equal(t, 0, len(g.GetCurrentPlayer().State().AllowedActions), "bb should not have any action")
+	// g.PrintState()
+}
+
+func Test_Allin_BigShortStackPlayers_AllowedActions2(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 5
+	opts.Blind.BB = 10
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  9005,
+			Positions: []string{"dealer", "sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  2995,
+			Positions: []string{"bb"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	assert.Nil(t, g.Start())
+
+	// Waiting for ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Entering Preflop
+	assert.Equal(t, "preflop", g.GetState().Status.Round)
+
+	// Blinds
+	assert.Nil(t, g.PayBlinds())
+
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
+
+	// preflop movements
+	assert.Nil(t, g.GetCurrentPlayer().Call())  // Dealer: Call
+	assert.Nil(t, g.GetCurrentPlayer().Allin()) // BB: Allin
+
+	/*
+		FIXME:
+		Conditions: dealer (big stack player), bb (small stack player)
+		Context: In this preflop case, bb has already allin.
+		Bug: Although dealer's bankroll is still greater than bb, dealer should only have call & fold options since there's no further players to move behind dealer's position.
+	*/
+	assert.Equal(t, 0, g.GetState().Status.CurrentPlayer)
+	assert.Equal(t, 1, g.GetState().Status.CurrentRaiser)
+	assert.ElementsMatch(t, []string{"fold", "call"}, g.GetCurrentPlayer().State().AllowedActions, "dealer should only have call & fold options")
+	// g.PrintState()
+}
